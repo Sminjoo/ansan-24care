@@ -109,7 +109,7 @@ async function nearby(app) {
         .map(([v, t]) => `<button data-n="${v}" class="${v === need ? 'on' : ''}">${t}</button>`).join('')}</div></div>
     <div class="map" id="map"></div>
     <div id="list" class="stack">${loadingHtml()}</div>
-    <div class="row between"><span class="small muted grow">밤·휴일 돌봄 시설 위치는 안산시가 데이터로 정합니다.</span>${state.about?.virtual ? `<span style="flex:none">${virtualFlag('가상 데이터')}</span>` : ''}</div>`;
+    <div class="row between"><span class="small muted grow">늦은 시간 돌봄방 위치는 안산시가 데이터와 주민 수요로 정합니다.</span>${state.about?.virtual ? `<span style="flex:none">${virtualFlag('가상 데이터')}</span>` : ''}</div>`;
 
   const L = window.L;
   const map = baseMap($('#map'), { zoom: true, streetLabels: true });
@@ -145,7 +145,7 @@ async function nearby(app) {
     let html = '';
     if (child && (!nearest || nearest.distance_m > 3000)) {
       html += `<div class="note warn"><b>${esc(child.name)}</b>(${esc(child.age_label)})가 이용할 수 있는 곳이 ${nearest ? `가장 가까워도 ${km(nearest.distance_m)} 떨어져 있어요` : '아직 없어요'}.
-        <a href="#/parent/need">'우리 동네에도 필요해요'</a>로 알려 주시면 2028년 추가 지정과 돌봄방 확대의 근거로 쓰입니다.</div>`;
+        <a href="#/parent/need">'우리 동네에도 필요해요'</a>로 알려 주시면 돌봄방을 어디에 둘지 정하는 근거로 쓰입니다.</div>`;
     }
     html += shown.map(f => facCard(f, avail[f.id], child)).join('') || '<div class="empty">조건에 맞는 시설이 없어요.</div>';
     if (hidden && child) html += `<p class="small muted">${esc(child.name)}의 나이에 맞지 않는 ${hidden}곳은 숨겼어요. <a href="#" id="showall">모두 보기</a></p>`;
@@ -154,7 +154,7 @@ async function nearby(app) {
       ${near.length ? near.map(o => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)">
         <span class="grow"><b>${esc(o.name)}</b> <span class="chip">${esc(o.type)}</span><br>
         <span class="small ink2">${icon('clock', 13)} ${esc(o.until_label)} · ${km(o.distance_m)} · ${esc(o.dong_name)}</span>${o.note ? `<br><span class="small muted">${esc(o.note)}</span>` : ''}</span></div>`).join('')
-        : `<div class="small muted">${need ? '이 시간까지 여는 기존 돌봄시설이 근처에 없어요. 그래서 시가 거점·돌봄방을 이곳에 두려고 합니다.' : '근처에 기존 늦은 시간 돌봄시설이 없어요.'}</div>`}
+        : `<div class="small muted">${need ? '이 시간까지 여는 기존 돌봄시설이 근처에 없어요. 이런 동네에 늦은 시간 돌봄방을 늘리려고 해요.' : '근처에 기존 늦은 시간 돌봄시설이 없어요.'}</div>`}
       <p class="small muted">기존 시설은 대부분 19:30~20:00에 끝나요. 시설 이름은 가상입니다.</p></section>`;
     $('#list').innerHTML = html;
     $('#showall')?.addEventListener('click', e => { e.preventDefault(); childSel = 0; $$('#kids button').forEach(x => x.classList.toggle('on', x.dataset.c === '0')); draw(avail); });
@@ -428,7 +428,7 @@ async function need(app) {
   const max = Math.max(1, ...summary.by_dong.map(d => d.count));
   mb.innerHTML = `
     <div class="card"><h3>가까운 곳에 밤·휴일 돌봄이 없나요?</h3>
-      <p class="small ink2" style="margin:6px 0 14px">등록한 내용은 동 단위로만 집계돼 <b>2028년 거점 추가 지정</b>과 <b>늦은 시간 돌봄방</b>을 어디에 둘지 정하는 근거로 쓰입니다.</p>
+      <p class="small ink2" style="margin:6px 0 14px">등록한 내용은 동 단위로만 집계돼 <b>늦은 시간 돌봄방</b>을 어디에 둘지 정하는 근거로 쓰입니다.</p>
       <form id="nf">
         <div class="field"><label>사는 동</label><select id="dong" required>${dongOptions(state.user.home_dong)}</select></div>
         <div class="field"><label>아이 나이</label><div class="check-grid">${Object.entries(AGE_KO).map(([k, v]) => `<label class="check-pill"><input type="radio" name="age" value="${k}" ${k === guessAge ? 'checked' : ''}>${v}</label>`).join('')}</div></div>

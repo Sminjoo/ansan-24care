@@ -10,7 +10,7 @@ const DEMO = [
   { u: 'parent3', role: '부모', name: '오수빈', desc: '선부2동 · 19개월 자녀' },
   { u: 'teacher1', role: '돌봄교사', name: '김보람', desc: '24시간 거점 센터(1)' },
   { u: 'teacher3', role: '돌봄교사', name: '박민지', desc: '늦은 시간 돌봄방' },
-  { u: 'city', role: '시 담당자', name: '여성보육과', desc: '거점 위치·확장 후보·운영 현황' },
+  { u: 'city', role: '시 담당자', name: '여성보육과', desc: '거점 운영·확장 돌봄방·운영 현황' },
 ];
 
 async function boot() {
@@ -81,8 +81,8 @@ function renderLanding(app) {
         </div>
         ${virtualFlag('시연용 · 수치와 시설은 모두 가상 데이터')}
         <h1 style="margin-top:14px">밤·휴일에도,<br>필요한 부모 가까이에.</h1>
-        <p class="lead">밤과 휴일에 일하는 부모가 사는 곳 가까이에 <b>24시간 거점 보육센터</b>를 두고, 거점에서 먼 동네는 <b>공실·유휴공간 돌봄방</b>으로 메웁니다.
-        부모는 가까운 곳을 찾아 예약하고 아이의 입실·귀가 알림을 받고, 시는 어디에 공간과 사람을 둘지 데이터로 정합니다.</p>
+        <p class="lead">밤과 휴일에 일하는 부모를 위해 시가 지정한 <b>24시간 거점 보육센터</b>를 운영하고, 거점에서 먼 동네는 <b>공공 유휴공간·공실 돌봄방</b>으로 메웁니다.
+        부모는 가까운 곳을 찾아 예약하고 아이의 입실·귀가 알림을 받습니다. 거점은 시가 지정하고, 거점이 닿지 않는 곳의 돌봄방 위치는 데이터와 주민 수요로 정합니다.</p>
       </div>
     </section>
     <div class="l-wrap" style="padding:0 16px">
@@ -102,7 +102,7 @@ function renderLanding(app) {
         <div class="role-card">
           <div class="ico">${icon('chart', 22)}</div>
           <h3>안산시 담당자</h3>
-          <ul><li>동별 밤·휴일 돌봄 수요와 공급, 공백</li><li>거점 후보 시립어린이집 순위와 시간대별 예상 이용</li><li>거점에서 먼 동의 공실·유휴공간 후보 점수</li><li>운영 현황, 정원 초과로 못 받은 예약, 수요 등록</li></ul>
+          <ul><li>동별 밤·휴일 돌봄 수요와 공급, 공백</li><li>시가 지정한 거점의 시간대별 예상 이용과 교사 배치</li><li>거점에서 먼 동의 공공 유휴공간·공실 후보 점수 → 돌봄방 위치</li><li>운영 현황, 정원 초과로 못 받은 예약, 수요 등록</li></ul>
           <button class="btn btn-primary" data-demo="city">시 담당자 화면 체험</button>
         </div>
       </div>
@@ -113,20 +113,20 @@ function renderLanding(app) {
         <div class="t-step"><span class="t-no">1</span><h3>필요한 곳 찾기</h3><p class="small muted">밤·휴일 돌봄 공백</p>
           <ul class="small ink2"><li>밤·휴일에 일하는 부모가 많은데 <b>늦은 시간 돌봄이 부족한 동</b>을 찾습니다</li>
           <li>산단 통근 부모가 많은 동도 함께 봅니다</li></ul></div>
-        <div class="t-step"><span class="t-no">2</span><h3>어디에 무엇을 둘지</h3><p class="small muted">시(공무원)가 배치를 정하는 근거</p>
-          <ul class="small ink2"><li>시립어린이집 반경 1km 수요로 <b>거점 후보 순위</b>, 시 기준(인구·공단)과 비교</li>
-          <li>출근·귀가 시각으로 <b>시간대별 예상 이용</b> → 밤 몇 시에 교사가 더 필요한지</li><li>거점에서 먼 동의 <b>공실·유휴공간 점수</b> → 돌봄방 후보</li></ul></div>
+        <div class="t-step"><span class="t-no">2</span><h3>거점 운영과 돌봄방 위치</h3><p class="small muted">시(공무원)가 쓰는 근거</p>
+          <ul class="small ink2"><li>거점(시 지정)의 <b>시간대별 예상 이용</b> → 밤 몇 시에 교사가 더 필요한지</li>
+          <li>거점이 닿지 않는 동을 찾고, 그곳의 <b>공공 유휴공간·공실 점수</b>와 주민 수요로 <b>돌봄방 위치</b>를 정함</li></ul></div>
         <div class="t-step"><span class="t-no">3</span><h3>부모가 쓰는 법</h3><p class="small muted">부모(엄마·아빠 모두)</p>
           <ul class="small ink2"><li>"오늘 몇 시까지 맡겨야 하나요?"를 고르면 <b>가까운 거점·돌봄방·기존 돌봄</b>을 한 번에</li>
-          <li>예약(거점 시간당 3천 원), 귀가 확인 코드, <b>입실·귀가 알림</b></li><li>"우리 동네에도 필요해요" 등록 → 다음 지정·돌봄방 확대에 반영</li></ul></div>
+          <li>예약(거점 시간당 3천 원), 귀가 확인 코드, <b>입실·귀가 알림</b></li><li>"우리 동네에도 필요해요" 등록 → 돌봄방 위치·확대에 반영</li></ul></div>
       </div>
     </section>
     <section class="l-section">
       <h2>흐름</h2>
       <div class="flow">
         <div class="step"><h3>밤·휴일 돌봄 수요가 큰 동 찾기</h3><p class="small ink2">밤·휴일에 일하는 부모가 많은데 늦은 시간 돌봄이 부족한 동을 찾습니다.</p></div>
-        <div class="step"><h3>거점 센터 위치 제안</h3><p class="small ink2">시립어린이집마다 반경 1km 수요를 합쳐 순위를 내고, 시간대별 예상 이용으로 교사 배치를 설계합니다.</p></div>
-        <div class="step ext"><h3>(확장) 먼 동네에 돌봄방</h3><p class="small ink2">거점에서 먼 수요 지역의 상가 공실·공공 유휴공간·문 닫은 어린이집을 점수화합니다.</p></div>
+        <div class="step"><h3>거점 운영 준비</h3><p class="small ink2">시가 지정하는 거점(공약 47) 주변 수요로 시간대별 예상 이용을 내고 교사 배치를 설계합니다.</p></div>
+        <div class="step ext"><h3>(확장) 먼 동네에 돌봄방</h3><p class="small ink2">거점이 닿지 않는 수요 지역의 공공 유휴공간·문 닫은 어린이집·상가 공실을 점수화해 데이터와 주민 수요로 위치를 정합니다.</p></div>
         <div class="step"><h3>예약·알림과 이용 현황</h3><p class="small ink2">부모 예약·알림, 교사 출석·귀가 확인, 시 이용 현황. 기록은 2028년 추가 지정의 근거가 됩니다.</p></div>
       </div>
     </section>
@@ -136,8 +136,8 @@ function renderLanding(app) {
         <div class="a"><h3>시설 위치 안내 (검색으로 충분)</h3>
           <ul class="ink2"><li>이미 있는 어린이집·돌봄센터를 지도에 보여 줌</li><li>문 닫은 뒤(19:30 이후)의 빈틈은 그대로</li><li>어디에 무엇을 더 둘지는 알려 주지 않음</li></ul></div>
         <div class="b"><h3>이 서비스의 핵심</h3>
-          <ul><li><b>시가 어디에 공간과 사람을 둘지 정하는 근거</b>를 만듦</li><li>거점 2곳의 위치, 밤 몇 시에 교사가 더 필요한지, 거점이 닿지 않는 동과 그곳의 쓸 수 있는 공간</li>
-          <li>예약·대기·정원 초과 기록과 주민 수요 등록이 다음 결정(2028년 추가 지정, 돌봄방 확대)으로 이어짐</li></ul></div>
+          <ul><li><b>시가 돌봄방을 어디에 두고, 거점에 교사를 언제 더 둘지 정하는 근거</b>를 만듦</li><li>거점(시 지정)의 밤 몇 시에 교사가 더 필요한지, 거점이 닿지 않는 동과 그곳에서 쓸 수 있는 공간</li>
+          <li>예약·정원 초과 기록과 주민 수요 등록이 다음 결정(교사 배치, 돌봄방 확대)으로 이어짐</li></ul></div>
       </div>
     </section>
     <section class="l-section">
@@ -145,7 +145,7 @@ function renderLanding(app) {
       <div class="grid-2">
         <div class="card flat"><h3>공약 47 · 거점형 시간제 보육센터</h3>
           <p class="small ink2" style="margin-top:6px">운영 중인 시립어린이집을 거점으로 지정(새로 짓지 않음). 6개월~7세, 07:30~다음 날 07:30, 평일·휴일. 개소당 보육교사 3명, 이용료 시간당 3천 원. 2027년 1곳 → 2028년 1곳 추가(총 10.17억 원).
-          원문 위치 기준(인구 많은 지역·공단 인근)에 <b>밤·휴일에 일하는 부모가 사는 곳</b>이라는 데이터 기준을 더하자는 제안입니다.</p></div>
+          거점 위치는 시가 원문 기준(인구 많은 지역·공단 인근)으로 정합니다. 이 서비스는 거점의 시간대별 이용과 교사 배치를 돕고, 거점이 닿지 않는 곳은 확장 돌봄방으로 메웁니다.</p></div>
         <div class="card flat"><h3>확장 · 늦은 시간 돌봄방</h3>
           <p class="small ink2" style="margin-top:6px">1단계 초등학생: 다함께돌봄 틀(평일 18~22시, 토요일). 영유아는 어린이집 인가·보육교사 자격이 필요하므로 거점 센터와 연계합니다.
           공간은 공공 유휴공간·문 닫은 어린이집을 먼저 검토하고(공약 45 연계), 보조 인력은 노인일자리 역량활용형(공약 37)과 연계합니다. 새 예산이 들며 법적 틀은 담당 부서 확인이 필요합니다.</p></div>

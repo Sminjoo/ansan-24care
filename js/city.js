@@ -6,13 +6,13 @@ import { baseMap, dongLayer, pin, divColor, seqColor, DIV_STEPS, SEQ_STEPS } fro
 const NAV = [
   ['', 'home', '개요', null],
   ['demand', null, '수요·공급', '1'],
-  ['hubs', null, '거점 위치', '2'],
+  ['hubs', null, '거점 운영', '2'],
   ['expand', null, '공백·확장', '3'],
   ['ops', null, '운영 현황', '4'],
   ['log', 'list', '결정 기록', null],
 ];
 const TITLES = { '': ['개요', '안산 24시간 돌봄 · 시 운영 콘솔'], demand: ['1. 밤·휴일 돌봄 수요가 큰 동', '그림 1 · 동별 수요와 공급, 공백'],
-  hubs: ['2. 24시간 거점 위치', '그림 2·3 · 후보 시립어린이집 순위와 시간대별 예상 이용'], expand: ['3. 공백 확인과 확장 돌봄방 후보', '그림 4·5 · 거점에서 먼 동, 공실·유휴공간 점수'],
+  hubs: ['2. 24시간 거점 운영 (거점은 시 지정)', '그림 2 · 시 지정 거점의 시간대별 예상 이용과 교사 배치'], expand: ['3. 공백 확인과 확장 돌봄방 후보', '그림 3·4 · 거점에서 먼 동, 공공 유휴공간·공실 점수 → 돌봄방 위치'],
   ops: ['4. 운영 현황', '예약·이용·정원 초과·수요 등록'], log: ['결정 기록', '거점 지정·공간 상태·설정 변경 이력'] };
 const COMP_KEYS = ['night', 'late', 'hol', 'sandan'];
 const COMP_LABEL = { night: '야간 출근', late: '심야 귀가', hol: '휴일 출근', sandan: '산단 통근 부모 거주' };
@@ -64,15 +64,15 @@ function qs(extra = {}) {
   Object.entries(extra).forEach(([k, v]) => v != null && p.set(k, v));
   return p.toString();
 }
-function weightFilters({ radius = false, threshold = false } = {}) {
+function weightFilters({ radius = false, threshold = false, weights = true } = {}) {
   const cc = COMP_COLORS();
   return `<div class="card flat"><div class="filters">
-    ${COMP_KEYS.map(k => `<div class="f"><label><span><i class="sw-inline" style="background:${cc[k]}"></i>${COMP_LABEL[k]} 가중치</span><output id="o-${k}">${settings.weights[k]}</output></label>
+    ${!weights ? '' : COMP_KEYS.map(k => `<div class="f"><label><span><i class="sw-inline" style="background:${cc[k]}"></i>${COMP_LABEL[k]} 가중치</span><output id="o-${k}">${settings.weights[k]}</output></label>
       <input type="range" min="0" max="3" step="0.5" value="${settings.weights[k]}" data-w="${k}"></div>`).join('')}
     ${radius ? `<div class="f"><label><span>거점 반경</span><output id="o-r">${settings.radius_km}km</output></label><input type="range" min="0.5" max="3" step="0.5" value="${settings.radius_km}" id="radius"></div>` : ''}
     ${threshold ? `<div class="f"><label><span>거점에서 '먼' 기준</span><output id="o-t">${settings.threshold_km}km</output></label><input type="range" min="1" max="5" step="0.5" value="${settings.threshold_km}" id="threshold"></div>` : ''}
     <button class="btn btn-sm" id="reset-w">기본값</button>
-  </div><p class="small muted" style="margin-top:8px">가중치·반경은 저장되어 모든 화면(수요·거점·확장)에 같이 적용돼요. 0으로 두면 그 지표를 빼고 계산합니다.</p></div>`;
+  </div><p class="small muted" style="margin-top:8px">${weights ? '가중치·반경은 저장되어 모든 화면(수요·거점·확장)에 같이 적용돼요. 0으로 두면 그 지표를 빼고 계산합니다.' : '반경 = 거점 주변에서 이용할 부모 세대를 세는 거리. 그림 2 예측에 쓰입니다.'}</p></div>`;
 }
 function bindFilters(onChange) {
   let t = null;
@@ -105,25 +105,25 @@ async function overview(cb) {
     </div>
     <div class="steps-bar">
       <a href="#/city/demand"><span class="sn">1 · 수요 찾기</span><b>밤·휴일 돌봄 수요가 큰 동</b><span class="small ink2">공백 1위 ${esc(o.top_gap[0]?.name || '')} (${o.top_gap[0]?.gap ?? ''})</span></a>
-      <a href="#/city/hubs"><span class="sn">2 · 거점 위치</span><b>시립어린이집 후보 순위</b><span class="small ink2">지정안: ${o.plan.map(p => `${p.year} ${esc(p.name)}`).join(', ')}</span></a>
+      <a href="#/city/hubs"><span class="sn">2 · 거점 운영</span><b>시간대별 이용·교사 배치</b><span class="small ink2">시 지정 거점: ${o.plan.map(p => `${p.year} ${esc(p.name)}`).join(', ')}</span></a>
       <a href="#/city/expand" class="ext"><span class="sn">3 · 확장</span><b>먼 동네 돌봄방 후보</b><span class="small ink2">남는 공백 1위 ${esc(cov.dongs[0]?.name || '')}</span></a>
       <a href="#/city/ops"><span class="sn">4 · 운영</span><b>예약·알림, 이용 현황</b><span class="small ink2">운영 ${o.facilities.length}곳</span></a>
     </div>
     <div class="grid-2-1">
-      <div class="card"><div class="card-title"><h3>남는 돌봄 공백 지도</h3><span class="card-sub">거점 지정안(${settings.threshold_km}km 안)으로 메워지지 않는 공백</span></div>
+      <div class="card"><div class="card-title"><h3>남는 돌봄 공백 지도</h3><span class="card-sub">시 지정 거점(${settings.threshold_km}km 안)으로 메워지지 않는 공백</span></div>
         <div class="map mid" id="map"></div>${mapLegend('남는 공백', SEQ_STEPS, '적음', '큼')}</div>
       <div class="stack">
-        <div class="card"><h3>거점 지정안</h3>${o.plan.map(p => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="map-pin plan" style="width:26px;height:26px;flex:none"><span>${p.slot}</span></span>
+        <div class="card"><h3>시 지정 거점</h3>${o.plan.map(p => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="map-pin plan" style="width:26px;height:26px;flex:none"><span>${p.slot}</span></span>
           <span class="grow"><b>${p.year}년 · ${esc(p.name)}</b><br><span class="small muted">${esc(p.memo || '')} ${p.updated_at ? '· ' + md(p.updated_at) : ''}</span></span></div>`).join('')}
-          <a class="btn btn-sm" style="margin-top:10px" href="#/city/hubs">후보 비교·변경</a></div>
+          <a class="btn btn-sm" style="margin-top:10px" href="#/city/hubs">교사 배치 보기</a></div>
         <div class="card"><h3>거점에서 먼 수요 상위</h3><table class="t" style="margin-top:8px"><thead><tr><th>동</th><th class="r">남는 공백</th><th class="r">거점 거리</th></tr></thead>
           <tbody>${cov.dongs.slice(0, 6).map(d => `<tr><td>${esc(d.name)}</td><td class="r">${d.remaining_gap}</td><td class="r">${d.mean_km}km</td></tr>`).join('')}</tbody></table></div>
       </div>
     </div>
     <div class="card"><h3>이 화면이 하는 일</h3>
-      <p class="ink2" style="margin-top:6px">시설 위치를 안내하는 것이 핵심이 아닙니다. <b>시가 어디에 공간과 사람을 둘지 정하는 근거</b>를 만듭니다:
-      거점 2곳의 위치(공약 47 원문 기준 + 밤·휴일 출근 부모가 사는 곳), 거점의 시간대별 교사 배치, 거점이 닿지 않는 동과 그곳에서 쓸 수 있는 공간.
-      운영이 시작되면 예약·정원 초과·미이용 기록과 주민 수요 등록이 2028년 추가 지정과 돌봄방 확대의 근거로 쌓입니다.</p></div>`;
+      <p class="ink2" style="margin-top:6px">시설 위치를 안내하는 것이 핵심이 아닙니다. <b>시가 공간과 사람을 둘 근거</b>를 만듭니다:
+      시가 지정한 거점(공약 47)의 시간대별 교사 배치, 그리고 거점이 닿지 않는 동을 찾아 <b>공공 유휴공간 돌봄방을 어디에 둘지 데이터와 주민 수요로 정하는 것</b>.
+      운영이 시작되면 예약·정원 초과·미이용 기록과 주민 수요 등록이 교사 배치와 돌봄방 확대의 근거로 쌓입니다.</p></div>`;
   const L = window.L;
   const map = baseMap($('#map'));
   const by = Object.fromEntries(cov.dongs.map(d => [d.code, d]));
@@ -132,7 +132,7 @@ async function overview(cb) {
     tooltip: p => { const d = by[p.code]; return `<b>${esc(p.name)}</b><br>남는 공백 ${d?.remaining_gap ?? 0} · 공백 ${d?.gap ?? 0}<br>거점 ${settings.threshold_km}km 안 거주 비중 ${Math.round((d?.covered || 0) * 100)}%`; } });
   o.plan.forEach(p => {
     L.circle([p.lat, p.lon], { radius: settings.threshold_km * 1000, color: '#1d2a4a', weight: 1.5, dashArray: '5 5', fill: false }).addTo(map);
-    L.marker([p.lat, p.lon], { icon: pin('plan', String(p.slot)) }).addTo(map).bindTooltip(`<b>${p.year} 거점 지정안</b><br>${esc(p.name)}`);
+    L.marker([p.lat, p.lon], { icon: pin('plan', String(p.slot)) }).addTo(map).bindTooltip(`<b>${p.year} 시 지정 거점</b><br>${esc(p.name)}`);
   });
   o.facilities.filter(f => f.kind === 'room').forEach(f => L.marker([f.lat, f.lon], { icon: pin('room', '돌') }).addTo(map).bindTooltip(`<b>${esc(f.name)}</b><br>${esc(f.status_label || '')}`));
 }
@@ -145,7 +145,7 @@ async function demand(cb) {
         <div class="map" id="map" style="height:560px"></div><div id="legend"></div></div>
       <div class="card"><div class="card-title"><h3>그림 1. 동별 밤·휴일 돌봄 수요와 공급 (공백 큰 순)</h3><span class="card-sub">지수: 안산시 안 최댓값 = 100</span></div>
         <div class="chart-box xl" style="height:640px"><canvas id="fig1" aria-label="동별 수요 지수와 공급 지수"></canvas></div>
-        <p class="explain">수요는 큰데 늦은 시간 돌봄이 적은 동이 거점·돌봄방 우선 지역이 됩니다. 공백 = 수요 지수 − 공급 지수.</p></div>
+        <p class="explain">수요는 큰데 늦은 시간 돌봄이 적은 동입니다. 시 지정 거점이 닿지 않는 곳은 확장 돌봄방을 우선 검토합니다. 공백 = 수요 지수 − 공급 지수.</p></div>
     </div>
     <div class="card"><div class="card-title"><h3>동별 지표</h3><a class="btn btn-sm" id="csv">${icon('download', 14)} CSV</a></div>
       <div class="table-wrap" id="tbl"></div></div>`;
@@ -190,24 +190,21 @@ async function demand(cb) {
   await load();
 }
 
-// ═══ 2. 거점 위치 ═══
+// ═══ 2. 거점 운영 (거점 위치는 시가 지정) ═══
 async function hubs(cb) {
-  cb.innerHTML = `${weightFilters({ radius: true })}
+  cb.innerHTML = `${weightFilters({ radius: true, weights: false })}
     <div class="grid-2-1">
-      <div class="card"><div class="card-title"><h3>그림 2. 24시간 거점 후보 시립어린이집 순위</h3><span class="card-sub" id="r-sub"></span></div>
-        <div class="chart-box lg" id="fig2-box"><canvas id="fig2" aria-label="후보 시립어린이집 점수"></canvas></div>
-        <p class="explain">점수를 구성 요소별로 보여 줘서 야간 출근 때문인지 산단 통근 때문인지 설명합니다. 각 지표는 후보 중 최댓값 대비 비율(가중치 합 100점).</p></div>
-      <div class="stack">
-        <div class="card"><h3>시 기준과 데이터 기준 비교</h3><div id="cmp" class="small ink2" style="margin-top:6px"></div></div>
-        <div class="card" id="flags"></div>
-      </div>
+      <div class="card"><div class="card-title"><h3>시 지정 거점</h3><span class="card-sub">공약 47 · 운영 중인 시립어린이집을 시가 지정</span></div>
+        <div id="plan-list"></div>
+        <p class="explain">거점 위치는 시가 공약 47 기준(인구 많은 지역·공단 인근)으로 정합니다. 이 화면은 지정된 거점이 <b>밤 몇 시에 얼마나 붐빌지</b> 보고 교사 배치를 설계합니다. 거점을 누르면 아래 그림 2가 그 거점으로 바뀝니다.</p></div>
+      <div class="card" id="flags"></div>
     </div>
+    <div class="card" id="fc"></div>
     <div class="grid-1-2 wide-only">
-      <div class="card"><div class="card-title"><h3>후보 위치</h3><span class="card-sub">원 = 반경 안 수요</span></div><div class="map mid" id="map"></div></div>
-      <div class="card"><div class="card-title"><h3>후보 표</h3><a class="btn btn-sm" id="csv">${icon('download', 14)} CSV</a></div><div class="table-wrap" id="tbl"></div>
-        <p class="small muted" style="margin-top:8px">행을 누르면 아래에서 시간대별 예상 이용과 교사 배치를 봅니다. 시 기준 = 반경 안 인구(50) + 산단 대표 지점과의 가까움(50).</p></div>
-    </div>
-    <div class="card" id="fc"></div>`;
+      <div class="card"><div class="card-title"><h3>시립어린이집 위치</h3><span class="card-sub">★ = 시 지정 거점 · 원 = 반경</span></div><div class="map mid" id="map"></div></div>
+      <div class="card"><div class="card-title"><h3>시립어린이집 목록 (거점 입력용)</h3><span class="card-sub" id="r-sub"></span></div><div class="table-wrap" id="tbl"></div>
+        <p class="small muted" style="margin-top:8px">시가 다른 시립어린이집을 지정하거나 검토할 때, 행을 눌러 그림 2에서 예상 이용을 보고 '2027/2028 거점으로 입력'으로 바꿉니다.</p></div>
+    </div>`;
   let res = null, sel = null, plan = [], facilities = [];
   const L = window.L;
   const map = baseMap($('#map'));
@@ -217,58 +214,51 @@ async function hubs(cb) {
   async function load() {
     const [r, p, o] = await Promise.all([api(`/city/candidates?${qs({ radius: settings.radius_km })}`), api('/city/plan'), api(`/city/overview?${qs()}`)]);
     res = r; plan = p.plan; facilities = o.facilities.filter(f => f.kind === 'hub');
-    sel = sel && res.candidates.find(c => c.id === sel.id) ? res.candidates.find(c => c.id === sel.id) : res.candidates[0];
-    $('#r-sub').textContent = `반경 ${res.radius_km}km 수요 · 후보 ${res.candidates.length}곳`;
-    $('#csv').href = `/api/city/export/candidates.csv?${qs({ radius: settings.radius_km })}`;
-    drawFig2(); drawCmp(); drawFlags(); drawTable(); drawMap(); await drawForecast();
+    // 시 지정 거점이 앞, 나머지는 동 이름순 (데이터 순위를 매기지 않음)
+    res.candidates.sort((a, b) => (a.plan_slot || 9) - (b.plan_slot || 9) || a.dong_name.localeCompare(b.dong_name, 'ko'));
+    const keep = sel && res.candidates.find(c => c.id === sel.id);
+    sel = keep || res.candidates.find(c => c.plan_slot) || res.candidates[0];
+    $('#r-sub').textContent = `${res.candidates.length}곳 · 반경 ${res.radius_km}km`;
+    drawPlan(); drawFlags(); drawTable(); drawMap(); await drawForecast();
   }
-  const label = c => `${c.name}(${c.dong_name})${c.plan_slot ? ` ★${2026 + c.plan_slot}` : ''}`;
-  function drawFig2() {
-    const cc = COMP_COLORS();
-    const top = res.candidates.slice(0, 10);
-    $('#fig2-box').style.height = `${Math.max(320, top.length * 40 + 80)}px`;
-    mk('fig2', {
-      type: 'bar',
-      data: { labels: top.map(label), datasets: COMP_KEYS.map(k => ({ label: COMP_LABEL[k], data: top.map(c => c.points[k]), backgroundColor: cc[k], borderColor: css('--surface'), borderWidth: { right: 2 }, borderSkipped: false, barPercentage: 0.75 })) },
-      options: { indexAxis: 'y', onClick: (_e, els) => { if (els[0]) { sel = top[els[0].index]; drawTable(); drawMap(); drawForecast(); } },
-        plugins: { legend: { position: 'bottom' }, endLabels: { format: i => `${top[i].score}점` },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.raw}점 (원값 ${num(top[c.dataIndex].raw[COMP_KEYS[c.datasetIndex]])}, z ${top[c.dataIndex].z[COMP_KEYS[c.datasetIndex]]})` } } },
-        scales: { x: axis({ stacked: true, min: 0, max: 110, ticks: { callback: v => v <= 100 ? v : '' } }), y: noGrid({ stacked: true }) } },
-    });
-  }
-  function drawCmp() {
-    const top2d = res.candidates.slice(0, 2).map(c => c.name);
-    const top2c = res.candidates.slice().sort((a, b) => a.city_rank - b.city_rank).slice(0, 2).map(c => c.name);
-    const same = top2d.filter(x => top2c.includes(x));
-    $('#cmp').innerHTML = `<p>순위 상관(스피어만) <b style="font-size:18px;color:var(--ink)">${res.spearman ?? '-'}</b> ${res.spearman >= 0.7 ? '— 두 기준이 대체로 같은 곳을 가리켜요.' : res.spearman >= 0.4 ? '— 일부 겹치지만 차이가 있어요.' : '— 두 기준이 다른 곳을 가리켜요.'}</p>
-      <p style="margin-top:8px">데이터 기준 상위 2곳: <b>${top2d.map(esc).join(', ')}</b><br>시 기준(인구·공단 인근) 상위 2곳: <b>${top2c.map(esc).join(', ')}</b></p>
-      <p style="margin-top:8px">${same.length === 2 ? '두 기준의 상위 2곳이 같아요. 지정 근거가 탄탄합니다.' : same.length === 1 ? `한 곳(${esc(same[0])})은 두 기준이 같고, 한 곳은 달라요. 다른 곳은 아래 표에서 이유(지표 구성)를 확인하세요.` : '상위 2곳이 서로 달라요. 원문 기준만으로는 밤·휴일 출근 부모가 놓칠 수 있습니다.'}</p>`;
+  const pick = c => { sel = c; drawPlan(); drawTable(); drawMap(); drawForecast(); };
+  function drawPlan() {
+    const planned = res.candidates.filter(c => c.plan_slot).sort((a, b) => a.plan_slot - b.plan_slot);
+    $('#plan-list').innerHTML = planned.map(c => {
+      const op = facilities.find(f => f.dong === c.dong && f.name.startsWith(c.name));
+      const memo = plan.find(p => p.slot === c.plan_slot)?.memo || '';
+      return `<button class="hub-pick ${sel?.id === c.id ? 'on' : ''}" data-id="${c.id}"><span class="map-pin plan" style="width:28px;height:28px;flex:none"><span>${c.plan_slot}</span></span>
+        <span class="grow"><b>${2026 + c.plan_slot}년 · ${esc(c.name)}</b> <span class="muted">${esc(c.dong_name)}</span><br>
+        <span class="small ink2">정원 ${c.capacity}명 · 반경 ${res.radius_km}km 안 영유아 ${num(c.kids)}명${op ? ` · ${esc(op.status_label || '운영')}` : ''}</span>
+        ${memo ? `<br><span class="small muted">${esc(memo)}</span>` : ''}</span></button>`;
+    }).join('') || '<div class="empty">아직 입력된 거점이 없어요. 아래 목록에서 시가 지정한 시립어린이집을 입력하세요.</div>';
+    $$('#plan-list .hub-pick').forEach(b => b.onclick = () => pick(res.candidates.find(c => c.id === b.dataset.id)));
   }
   function drawFlags() {
-    $('#flags').innerHTML = `<h3>추가 지정 필요 지역</h3>
-      ${res.flags.length ? `<p class="small ink2" style="margin:6px 0 8px">공백이 큰데 가까운 시립어린이집이 없는 동입니다. 2028년 추가 지정 때 다른 시설 유형(법인·직장 어린이집 협약 등)이나 확장 돌봄방으로 검토하세요.</p>
-        ${res.flags.map(f => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span><b>${esc(f.name)}</b> <span class="chip crit">${icon('alert', 12)} 시립 없음</span></span><span class="small ink2">공백 ${f.gap} · 가장 가까운 시립 ${f.nearest_km}km</span></div>`).join('')}`
-      : '<p class="small ink2" style="margin-top:6px">공백 상위 동마다 가까운 시립어린이집 후보가 있어요.</p>'}`;
+    $('#flags').innerHTML = `<h3>거점이 닿기 어려운 수요 지역</h3>
+      ${res.flags.length ? `<p class="small ink2" style="margin:6px 0 8px">공백이 큰데 가까운 시립어린이집이 없는 동입니다. 이런 곳은 <b>확장 돌봄방</b>(공공 유휴공간)을 데이터와 주민 수요로 검토합니다 → 3. 공백·확장.</p>
+        ${res.flags.map(f => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span><b>${esc(f.name)}</b> <span class="chip crit">${icon('alert', 12)} 시립 없음</span></span><span class="small ink2">공백 ${f.gap} · 가장 가까운 시립 ${f.nearest_km}km</span></div>`).join('')}
+        <a class="btn btn-sm" style="margin-top:10px" href="#/city/expand">돌봄방 후보 보기</a>`
+      : '<p class="small ink2" style="margin-top:6px">공백 상위 동마다 가까운 시립어린이집이 있어요. 거점에서 먼 동은 3. 공백·확장에서 봅니다.</p>'}`;
   }
   function drawTable() {
-    const cc = COMP_COLORS();
-    $('#tbl').innerHTML = `<table class="t"><thead><tr><th class="r">순위</th><th>후보</th><th>점수 구성</th><th class="r">점수</th><th class="r">시 기준</th><th class="r">반경 안 영유아</th><th>지정안</th></tr></thead>
-      <tbody>${res.candidates.map(c => `<tr class="click ${sel?.id === c.id ? 'sel' : ''}" data-id="${c.id}"><td class="r">${c.rank}</td><td class="nowrap"><b>${esc(c.name)}</b><br><span class="small muted">${esc(c.dong_name)} · 정원 ${c.capacity}</span></td>
-        <td>${scoreBar(COMP_KEYS.map(k => ({ label: COMP_LABEL[k], v: c.points[k] })), COMP_KEYS.map(k => cc[k]))}</td><td class="r"><b>${c.score}</b></td>
-        <td class="r nowrap">${c.city_rank}위 <span class="muted">(${c.city_score})</span></td><td class="r">${num(c.kids)}</td>
-        <td>${c.plan_slot ? `<span class="chip blue">★ ${2026 + c.plan_slot}</span>` : ''}</td></tr>`).join('')}</tbody></table>`;
-    $$('#tbl tr[data-id]').forEach(tr => tr.onclick = () => { sel = res.candidates.find(c => c.id === tr.dataset.id); drawTable(); drawMap(); drawForecast(); });
+    $('#tbl').innerHTML = `<table class="t"><thead><tr><th>시립어린이집</th><th>동</th><th class="r">정원</th><th class="r">반경 안 영유아</th><th>거점 지정</th></tr></thead>
+      <tbody>${res.candidates.map(c => `<tr class="click ${sel?.id === c.id ? 'sel' : ''}" data-id="${c.id}"><td class="nowrap"><b>${esc(c.name)}</b></td><td class="muted">${esc(c.dong_name)}</td>
+        <td class="r">${c.capacity}</td><td class="r">${num(c.kids)}</td>
+        <td>${c.plan_slot ? `<span class="chip blue">★ ${2026 + c.plan_slot} 시 지정</span>` : ''}</td></tr>`).join('')}</tbody></table>`;
+    $$('#tbl tr[data-id]').forEach(tr => tr.onclick = () => pick(res.candidates.find(c => c.id === tr.dataset.id)));
   }
   function drawMap() {
     mlayer.clearLayers();
     res.candidates.forEach(c => {
-      L.circle([c.lat, c.lon], { radius: res.radius_km * 1000, color: sel?.id === c.id ? '#1d2a4a' : '#2a78d6', weight: sel?.id === c.id ? 2.5 : 1, fillOpacity: 0.04 + 0.22 * (c.score / 100) }).addTo(mlayer);
-      L.marker([c.lat, c.lon], { icon: pin(c.plan_slot ? 'plan' : 'hub', String(c.rank)) }).addTo(mlayer)
-        .bindTooltip(`<b>${c.rank}위 ${esc(c.name)}</b> (${esc(c.dong_name)})<br>점수 ${c.score} · 시 기준 ${c.city_rank}위`)
-        .on('click', () => { sel = c; drawTable(); drawMap(); drawForecast(); });
+      const on = sel?.id === c.id;
+      if (c.plan_slot || on) L.circle([c.lat, c.lon], { radius: res.radius_km * 1000, color: on ? '#1d2a4a' : '#2a78d6', weight: on ? 2.5 : 1.2, fillOpacity: on ? 0.12 : 0.05 }).addTo(mlayer);
+      L.marker([c.lat, c.lon], { icon: pin(c.plan_slot ? 'plan' : 'hub', c.plan_slot ? String(c.plan_slot) : '') }).addTo(mlayer)
+        .bindTooltip(`<b>${esc(c.name)}</b> (${esc(c.dong_name)})${c.plan_slot ? `<br>★ ${2026 + c.plan_slot} 시 지정 거점` : ''}<br>정원 ${c.capacity} · 반경 안 영유아 ${num(c.kids)}명`)
+        .on('click', () => pick(c));
     });
   }
-  // 그림 3 + 교사 배치
+  // 그림 2 + 교사 배치
   let fcState = { uptake: 3, staffing: null, per_teacher: 5, target: null };
   async function drawForecast() {
     const box = $('#fc');
@@ -283,9 +273,9 @@ async function hubs(cb) {
     const fmtH = hs => hs.length ? hs.map(h => `${h}시`).join(', ') : '없음';
     const planSlot = sel.plan_slot;
     box.innerHTML = `
-      <div class="card-title"><h3>그림 3. ${esc(sel.name)} 시간대별 예상 이용 아동 수</h3>
-        <div class="row wrap">${opFac ? `<div class="seg" id="fct"><button data-t="cand" class="${fcState.target !== 'fac' ? 'on' : ''}">후보로 보기</button><button data-t="fac" class="${fcState.target === 'fac' ? 'on' : ''}">운영 중 배치표</button></div>` : ''}
-          <button class="btn btn-sm btn-primary" id="plan1" ${planSlot === 1 ? 'disabled' : ''}>2027 거점으로 지정</button><button class="btn btn-sm" id="plan2" ${planSlot === 2 ? 'disabled' : ''}>2028 추가 지정</button></div></div>
+      <div class="card-title"><h3>그림 2. ${esc(sel.name)}${sel.plan_slot ? ` (${2026 + sel.plan_slot} 시 지정 거점)` : ' (검토용)'} 시간대별 예상 이용 아동 수</h3>
+        <div class="row wrap">${opFac ? `<div class="seg" id="fct"><button data-t="cand" class="${fcState.target !== 'fac' ? 'on' : ''}">주변 수요로 예측</button><button data-t="fac" class="${fcState.target === 'fac' ? 'on' : ''}">운영 중 배치표</button></div>` : ''}
+          <button class="btn btn-sm btn-primary" id="plan1" ${planSlot === 1 ? 'disabled' : ''}>2027 거점으로 입력</button><button class="btn btn-sm" id="plan2" ${planSlot === 2 ? 'disabled' : ''}>2028 거점으로 입력</button></div></div>
       <div class="grid-2-1">
         <div><div class="chart-box"><canvas id="fig3" aria-label="평일 밤과 휴일 시간대별 예상 이용"></canvas></div>
           <p class="explain">반경 ${settings.radius_km}km 안 부모 세대가 맡기고 찾는 시각을 추정합니다. 평일 낮(07:30~19:30)은 정규 어린이집 시간이라 예측에서 뺍니다. 점선은 정원(근무 교사 × 교사 1인당 ${f.per_teacher}명).
@@ -326,11 +316,11 @@ async function hubs(cb) {
       try { await api(`/city/facilities/${opFac.id}/staffing`, { method: 'PUT', body: { staffing: fcState.staffing, per_teacher: fcState.per_teacher } }); toast('배치표를 저장했어요', '부모 예약 화면의 시간대별 정원에 바로 반영됩니다.'); }
       catch (e) { toastErr(e); }
     });
-    const designate = slot => modal(`<h2>${2026 + slot}년 거점으로 지정</h2><p class="ink2 small" style="margin:6px 0 12px">${esc(sel.name)}(${esc(sel.dong_name)}) · 데이터 점수 ${sel.score} (${sel.rank}위) · 시 기준 ${sel.city_rank}위</p>
-      <div class="field"><label>지정 근거 메모 (결정 기록에 남아요)</label><textarea id="memo">${esc(`데이터 ${sel.rank}위·시 기준 ${sel.city_rank}위, 반경 ${settings.radius_km}km 영유아 ${sel.kids}명`)}</textarea></div>
-      <div class="row" style="justify-content:flex-end"><button class="btn" data-close>닫기</button><button class="btn btn-primary" id="ok">지정안 저장</button></div>`,
+    const designate = slot => modal(`<h2>${2026 + slot}년 거점 입력 (시 지정)</h2><p class="ink2 small" style="margin:6px 0 12px">${esc(sel.name)}(${esc(sel.dong_name)}) · 시가 지정한(또는 검토 중인) 거점을 입력하면 공백·확장 분석과 교사 배치가 이 거점 기준으로 바뀝니다.</p>
+      <div class="field"><label>메모 (결정 기록에 남아요)</label><textarea id="memo">${esc(`공약 47 시 지정 거점 · 반경 ${settings.radius_km}km 영유아 ${sel.kids}명`)}</textarea></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-close>닫기</button><button class="btn btn-primary" id="ok">저장</button></div>`,
       (el, close) => { el.querySelector('#ok').onclick = async () => {
-        try { await api('/city/plan', { method: 'PUT', body: { slot, stcode: sel.id, memo: el.querySelector('#memo').value } }); close(); toast('지정안을 저장했어요', '공백·확장 분석이 새 지정안 기준으로 바뀝니다.'); load(); }
+        try { await api('/city/plan', { method: 'PUT', body: { slot, stcode: sel.id, memo: el.querySelector('#memo').value } }); close(); toast('거점을 입력했어요', '공백·확장 분석이 이 거점 기준으로 바뀝니다.'); load(); }
         catch (e) { toastErr(e); } }; });
     $('#plan1').onclick = () => designate(1);
     $('#plan2').onclick = () => designate(2);
@@ -349,10 +339,10 @@ async function expand(cb) {
         <div class="table-wrap" id="far"></div></div>
       <div class="card"><div class="card-title"><h3>지도</h3><div class="row"><button class="btn btn-sm" id="addmode">${icon('plus', 14)} 공간 후보 직접 추가</button></div></div>
         <div class="map tall" id="map"></div>${mapLegend('남는 공백', SEQ_STEPS, '적음', '큼')}
-        <div class="legend-row" style="margin-top:6px"><span><i style="background:#1d2a4a"></i>거점 지정안</span><span><i style="background:#1baf7a"></i>운영 중 돌봄방</span><span><i style="background:#6250d6"></i>공간 후보</span></div></div>
+        <div class="legend-row" style="margin-top:6px"><span><i style="background:#1d2a4a"></i>시 지정 거점</span><span><i style="background:#1baf7a"></i>운영 중 돌봄방</span><span><i style="background:#6250d6"></i>공간 후보</span></div></div>
     </div>
     <div class="card" id="fig4card"></div>
-    <div class="card"><div class="card-title"><h3>그림 5. (확장) 늦은 시간 돌봄방 공간 후보 점수</h3>
+    <div class="card"><div class="card-title"><h3>그림 4. (확장) 늦은 시간 돌봄방 공간 후보 점수</h3>
       <div class="row wrap"><div class="seg" id="target"><button data-t="elem" class="on">1단계 · 초등학생</button><button data-t="kid">2단계 · 영유아(거점 연계)</button></div>
       <select id="kindf" style="width:auto;height:32px;padding:4px 8px;font-size:13px"><option value="">모든 종류</option>${Object.entries(SPACE_KIND).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
       <a class="btn btn-sm" id="csv">${icon('download', 14)} CSV</a></div></div>
@@ -388,7 +378,7 @@ async function expand(cb) {
     drawMap.done = true;
     cov.hubs.forEach(h => {
       L.circle([h.lat, h.lon], { radius: settings.threshold_km * 1000, color: '#1d2a4a', weight: 1.5, dashArray: '5 5', fill: false, interactive: false }).addTo(pins);
-      L.marker([h.lat, h.lon], { icon: pin('plan', String(h.slot)) }).addTo(pins).bindTooltip(`<b>${2026 + h.slot} 거점 지정안</b><br>${esc(h.name)}`);
+      L.marker([h.lat, h.lon], { icon: pin('plan', String(h.slot)) }).addTo(pins).bindTooltip(`<b>${2026 + h.slot} 시 지정 거점</b><br>${esc(h.name)}`);
     });
     cov.rooms.forEach(r => L.marker([r.lat, r.lon], { icon: pin('room', '돌') }).addTo(pins).bindTooltip(`<b>${esc(r.name)}</b><br>운영 중`));
     spaces.filter(s => s.status !== 'operating').forEach((s, i) => L.marker([s.lat, s.lon], { icon: pin('space', '') }).addTo(pins)
@@ -397,7 +387,7 @@ async function expand(cb) {
   async function drawFig4() {
     const p = await api(`/city/return-profile?dong=${selDong}`);
     const d = cov.dongs.find(x => x.code === selDong);
-    $('#fig4card').innerHTML = `<div class="card-title"><h3>그림 4. 거점에서 먼 ${esc(p.name)}: 부모 세대(30~40대) 귀가 시각과 기존 돌봄 종료 시각</h3>
+    $('#fig4card').innerHTML = `<div class="card-title"><h3>그림 3. 거점에서 먼 ${esc(p.name)}: 부모 세대(30~40대) 귀가 시각과 기존 돌봄 종료 시각</h3>
       <span class="chip ${p.after20_pct >= 40 ? 'crit' : 'warn'}">${icon('alert', 12)} 20시 이후 귀가 약 ${p.after20_pct}%</span></div>
       <div class="grid-2-1"><div class="chart-box"><canvas id="fig4" aria-label="귀가 시각 분포"></canvas></div>
       <div class="stack small ink2"><p><b style="color:var(--ink)">${esc(p.name)}</b> · 남는 공백 ${d?.remaining_gap ?? '-'} · 거점까지 평균 ${d?.mean_km ?? '-'}km · 주민 등록 ${d?.registrations ?? 0}건</p>
@@ -514,7 +504,7 @@ async function ops(cb) {
           <div class="kpi"><div class="k-label">이용 시간</div><div class="k-value">${num(f.child_hours)}h</div><div class="k-sub">${f.revenue ? `이용료 ${num(f.revenue)}원` : '시범 무료'}</div></div>
           <div class="kpi"><div class="k-label">평일 정원 대비 이용률</div><div class="k-value">${f.utilization ?? '-'}%</div><div class="k-sub">운영 시간 평균</div></div>
           <div class="kpi"><div class="k-label">미이용률</div><div class="k-value">${f.no_show_rate}%</div><div class="k-sub">취소 ${f.status.cancelled || 0}건</div></div>
-          <div class="kpi"><div class="k-label">정원이 차서 못 받음</div><div class="k-value" style="color:${f.failures ? 'var(--critical)' : 'inherit'}">${f.failures}</div><div class="k-sub">추가 교사·추가 지정 근거</div></div>
+          <div class="kpi"><div class="k-label">정원이 차서 못 받음</div><div class="k-value" style="color:${f.failures ? 'var(--critical)' : 'inherit'}">${f.failures}</div><div class="k-sub">추가 교사 배치 근거</div></div>
         </div>
         <div class="grid-2">
           <div><h4>시간대별 평균 이용 아동 (평일) vs 정원</h4><div class="chart-box sm"><canvas id="pf${i}"></canvas></div></div>
@@ -555,7 +545,7 @@ async function ops(cb) {
 // ═══ 결정 기록 ═══
 async function log(cb) {
   const { audit } = await api('/city/audit');
-  const ACT = { hub_plan: '거점 지정안', space_update: '공간 상태', space_add: '공간 추가', staffing: '교사 배치표', settings: '분석 설정', recompute: '데이터 재계산' };
+  const ACT = { hub_plan: '시 지정 거점 입력', space_update: '공간 상태', space_add: '공간 추가', staffing: '교사 배치표', settings: '분석 설정', recompute: '데이터 재계산' };
   const desc = a => {
     const d = a.detail;
     if (a.action === 'hub_plan') return `${2026 + d.slot}년 거점 → ${esc(d.name)} ${d.memo ? `<br><span class="muted">${esc(d.memo)}</span>` : ''}`;
@@ -565,8 +555,8 @@ async function log(cb) {
     if (a.action === 'settings') return `가중치 ${Object.entries(d.weights).map(([k, v]) => `${COMP_LABEL[k]} ${v}`).join(', ')} · 반경 ${d.radius_km}km · 먼 기준 ${d.threshold_km}km`;
     return esc(JSON.stringify(d));
   };
-  cb.innerHTML = `<div class="card"><p class="small ink2" style="margin-bottom:10px">누가 언제 어떤 근거로 거점·공간·배치를 바꿨는지 남깁니다. 위원회 보고나 2028년 추가 지정 때 근거 자료로 씁니다.</p>
+  cb.innerHTML = `<div class="card"><p class="small ink2" style="margin-bottom:10px">누가 언제 어떤 근거로 거점·공간·배치를 바꿨는지 남깁니다. 위원회 보고나 돌봄방 확대·예산 협의 때 근거 자료로 씁니다.</p>
     ${audit.length ? `<div class="table-wrap"><table class="t"><thead><tr><th>시각</th><th>담당</th><th>항목</th><th>내용</th></tr></thead><tbody>
     ${audit.map(a => `<tr><td class="num small">${md(a.created_at)} ${hhmm(a.created_at)}</td><td class="small">${esc(a.user_name || '')}</td><td><span class="chip">${esc(ACT[a.action] || a.action)}</span></td><td class="small">${desc(a)}</td></tr>`).join('')}</tbody></table></div>`
-    : '<div class="empty">아직 기록이 없어요. 거점 지정안이나 공간 상태를 바꾸면 여기에 남아요.</div>'}</div>`;
+    : '<div class="empty">아직 기록이 없어요. 시 지정 거점 입력이나 공간 상태를 바꾸면 여기에 남아요.</div>'}</div>`;
 }

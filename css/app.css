@@ -226,7 +226,10 @@ footer.l-foot { max-width: 1080px; margin: 40px auto 0; padding: 20px 16px 40px;
 .map-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: grid; place-items: center; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
 .map-pin span { transform: rotate(45deg); color: #fff; font-size: 12px; font-weight: 800; }
 .map-pin.hub { background: #2a78d6; } .map-pin.room { background: #1baf7a; } .map-pin.timecare { background: #898781; }
-.map-pin.plan { background: #1d2a4a; } .map-pin.space { background: #6250d6; width: 24px; height: 24px; }
+.map-pin.plan { background: #1d2a4a; }
+.hub-pick { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 8px; cursor: pointer; }
+.hub-pick:hover { background: var(--surface-2, rgba(0,0,0,.03)); }
+.hub-pick.on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink) inset; } .map-pin.space { background: #6250d6; width: 24px; height: 24px; }
 .me-dot { width: 16px; height: 16px; border-radius: 50%; background: #2a78d6; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(42,120,214,.25); }
 .dong-label { background: transparent; border: 0; box-shadow: none; font-size: 11px; font-weight: 700; color: #33322f; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
 .dong-label::before { display: none; }
