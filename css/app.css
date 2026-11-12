@@ -358,3 +358,8 @@ table.t td:first-child, table.t td.nowrap { white-space: nowrap; }
 .c-body > *, .t-body > *, .m-body > *, .stack > *, .card { min-width: 0; }
 .demo-badge { position: fixed; right: 12px; bottom: 12px; z-index: 2500; font: inherit; font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent); background: var(--warning-soft); color: color-mix(in srgb, var(--warning) 45%, var(--ink)); cursor: pointer; box-shadow: var(--shadow); }
 body:has(.tabbar) .demo-badge { bottom: 84px; }
+.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; position: relative; }
+.t-step { background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 16px 16px 12px; display: grid; gap: 4px; align-content: start; }
+.t-step ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.t-no { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 800; display: grid; place-items: center; margin-bottom: 4px; }
+@media (max-width: 860px) { .three { grid-template-columns: 1fr; } }

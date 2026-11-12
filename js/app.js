@@ -108,9 +108,23 @@ function renderLanding(app) {
       </div>
     </div>
     <section class="l-section">
+      <h2>세 단계로 보는 이 서비스</h2>
+      <div class="three">
+        <div class="t-step"><span class="t-no">1</span><h3>필요한 곳 찾기</h3><p class="small muted">밤·휴일 돌봄 공백</p>
+          <ul class="small ink2"><li>밤·휴일에 일하는 부모가 많은데 <b>늦은 시간 돌봄이 부족한 동</b>을 찾습니다</li>
+          <li>산단 통근 부모가 많은 동도 함께 봅니다</li></ul></div>
+        <div class="t-step"><span class="t-no">2</span><h3>어디에 무엇을 둘지</h3><p class="small muted">시(공무원)가 배치를 정하는 근거</p>
+          <ul class="small ink2"><li>시립어린이집 반경 1km 수요로 <b>거점 후보 순위</b>, 시 기준(인구·공단)과 비교</li>
+          <li>출근·귀가 시각으로 <b>시간대별 예상 이용</b> → 밤 몇 시에 교사가 더 필요한지</li><li>거점에서 먼 동의 <b>공실·유휴공간 점수</b> → 돌봄방 후보</li></ul></div>
+        <div class="t-step"><span class="t-no">3</span><h3>부모가 쓰는 법</h3><p class="small muted">부모(엄마·아빠 모두)</p>
+          <ul class="small ink2"><li>"오늘 몇 시까지 맡겨야 하나요?"를 고르면 <b>가까운 거점·돌봄방·기존 돌봄</b>을 한 번에</li>
+          <li>예약(거점 시간당 3천 원), 귀가 확인 코드, <b>입실·귀가 알림</b></li><li>"우리 동네에도 필요해요" 등록 → 다음 지정·돌봄방 확대에 반영</li></ul></div>
+      </div>
+    </section>
+    <section class="l-section">
       <h2>흐름</h2>
       <div class="flow">
-        <div class="step"><h3>밤·휴일 돌봄 수요가 큰 동 찾기</h3><p class="small ink2">20~40대의 야간 출근·심야 귀가·휴일 출근, 산단 통근 거주를 동별로 집계합니다.</p></div>
+        <div class="step"><h3>밤·휴일 돌봄 수요가 큰 동 찾기</h3><p class="small ink2">밤·휴일에 일하는 부모가 많은데 늦은 시간 돌봄이 부족한 동을 찾습니다.</p></div>
         <div class="step"><h3>거점 센터 위치 제안</h3><p class="small ink2">시립어린이집마다 반경 1km 수요를 합쳐 순위를 내고, 시간대별 예상 이용으로 교사 배치를 설계합니다.</p></div>
         <div class="step ext"><h3>(확장) 먼 동네에 돌봄방</h3><p class="small ink2">거점에서 먼 수요 지역의 상가 공실·공공 유휴공간·문 닫은 어린이집을 점수화합니다.</p></div>
         <div class="step"><h3>예약·알림과 이용 현황</h3><p class="small ink2">부모 예약·알림, 교사 출석·귀가 확인, 시 이용 현황. 기록은 2028년 추가 지정의 근거가 됩니다.</p></div>
@@ -139,7 +153,6 @@ function renderLanding(app) {
     </section>
     <footer class="l-foot">
       안산시 민간데이터 활용 대민서비스 아이디어 · 주제 2 프로토타입. 화면의 동 이름·경계는 실제(행정동 경계 admdongkor, CC BY 4.0)이지만 시설·인원·수치는 모두 가상 데이터입니다.
-      통신 데이터에는 '부모'나 '자녀 유무'가 없으므로 20~40대 남녀의 야간·휴일 이동으로 추정하며, 시민 화면에는 개방 데이터와 동 단위 집계만 씁니다.
     </footer>
   </div>`;
   $('#theme').onclick = toggleTheme;

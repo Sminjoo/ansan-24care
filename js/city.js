@@ -9,12 +9,11 @@ const NAV = [
   ['hubs', null, '거점 위치', '2'],
   ['expand', null, '공백·확장', '3'],
   ['ops', null, '운영 현황', '4'],
-  ['data', 'db', '데이터·방법', null],
   ['log', 'list', '결정 기록', null],
 ];
 const TITLES = { '': ['개요', '안산 24시간 돌봄 · 시 운영 콘솔'], demand: ['1. 밤·휴일 돌봄 수요가 큰 동', '그림 1 · 동별 수요와 공급, 공백'],
   hubs: ['2. 24시간 거점 위치', '그림 2·3 · 후보 시립어린이집 순위와 시간대별 예상 이용'], expand: ['3. 공백 확인과 확장 돌봄방 후보', '그림 4·5 · 거점에서 먼 동, 공실·유휴공간 점수'],
-  ops: ['4. 운영 현황', '예약·이용·정원 초과·수요 등록'], data: ['데이터와 계산 방법', '쓰는 데이터, 주요 계산, 한계'], log: ['결정 기록', '거점 지정·공간 상태·설정 변경 이력'] };
+  ops: ['4. 운영 현황', '예약·이용·정원 초과·수요 등록'], log: ['결정 기록', '거점 지정·공간 상태·설정 변경 이력'] };
 const COMP_KEYS = ['night', 'late', 'hol', 'sandan'];
 const COMP_LABEL = { night: '야간 출근', late: '심야 귀가', hol: '휴일 출근', sandan: '산단 통근 부모 거주' };
 const SPACE_KIND = { vacant_store: '상가 공실', public_idle: '공공 유휴공간', closed_daycare: '문 닫은 어린이집' };
@@ -54,7 +53,7 @@ export async function renderCity(app, seg) {
   const cb = shell(app, page);
   onCleanup(() => Object.keys(charts).forEach(k => delete charts[k]));
   settings = (await api('/city/settings')).settings;
-  const pages = { '': overview, demand, hubs, expand, ops, data, log };
+  const pages = { '': overview, demand, hubs, expand, ops, log };
   await (pages[page] || overview)(cb);
 }
 
@@ -149,9 +148,7 @@ async function demand(cb) {
         <p class="explain">수요는 큰데 늦은 시간 돌봄이 적은 동이 거점·돌봄방 우선 지역이 됩니다. 공백 = 수요 지수 − 공급 지수.</p></div>
     </div>
     <div class="card"><div class="card-title"><h3>동별 지표</h3><a class="btn btn-sm" id="csv">${icon('download', 14)} CSV</a></div>
-      <div class="table-wrap" id="tbl"></div>
-      <p class="small muted" style="margin-top:8px">야간 출근·심야 귀가는 평일 하루 평균(20~40대 남녀, 명), 휴일 출근은 토·일 하루 평균, 산단 통근은 직장이 반월·시화산단 동인 사람의 자택 동 분포(DS-083, 내부 집계).
-      공급은 야간연장·24시간·휴일 어린이집과 19:30 이후 운영하는 돌봄시설의 '정원×늦은 운영시간' 합.</p></div>`;
+      <div class="table-wrap" id="tbl"></div></div>`;
   let mode = 'gap', layer = null, rows = [];
   const map = baseMap($('#map'));
   async function load() {
@@ -291,13 +288,13 @@ async function hubs(cb) {
           <button class="btn btn-sm btn-primary" id="plan1" ${planSlot === 1 ? 'disabled' : ''}>2027 거점으로 지정</button><button class="btn btn-sm" id="plan2" ${planSlot === 2 ? 'disabled' : ''}>2028 추가 지정</button></div></div>
       <div class="grid-2-1">
         <div><div class="chart-box"><canvas id="fig3" aria-label="평일 밤과 휴일 시간대별 예상 이용"></canvas></div>
-          <p class="explain">반경 ${settings.radius_km}km 안 20~40대의 출근·귀가 시각으로 맡기고 찾는 시각을 추정합니다. 평일 낮(07:30~19:30)은 정규 어린이집 시간이라 예측에서 뺍니다(시간제 이용은 운영 기록으로 봅니다). 점선은 정원(근무 교사 × 교사 1인당 ${f.per_teacher}명).
+          <p class="explain">반경 ${settings.radius_km}km 안 부모 세대가 맡기고 찾는 시각을 추정합니다. 평일 낮(07:30~19:30)은 정규 어린이집 시간이라 예측에서 뺍니다. 점선은 정원(근무 교사 × 교사 1인당 ${f.per_teacher}명).
           ${overWd.length ? `<b style="color:var(--critical)">평일 ${fmtH(overWd)}</b>에 정원을 넘어요 → 그 시간대 교사 배치·예약 상한을 조정하세요.` : '평일엔 정원 안에서 운영돼요.'}
           ${overHo.length ? ` 휴일은 <b style="color:var(--critical)">${fmtH(overHo)}</b>에 정원을 넘어요.` : ''}</p></div>
         <div class="stack">
           <div class="filters"><div class="f" style="min-width:100%"><label><span>이용 의향(부모 중 실제 이용 비율)</span><output>${fcState.uptake}%</output></label><input type="range" min="1" max="10" step="0.5" value="${fcState.uptake}" id="uptake"></div>
             <div class="f" style="min-width:100%"><label><span>교사 1인당 아동 수(혼합 연령 평균)</span><output>${f.per_teacher}명</output></label><input type="range" min="3" max="10" step="1" value="${f.per_teacher}" id="pt"></div></div>
-          <div class="note small">반경 안 영유아 ${num(f.kids_in_radius)}명 / 20~40대 ${num(f.adults_in_radius)}명 → 전환율 ${f.conv_pct}%. 통신 데이터에 '부모'가 없어 이 비율로 보정합니다(가정값, 시범 운영 기록으로 보정).</div>
+          <div class="note small">반경 안 영유아 ${num(f.kids_in_radius)}명. 이용 의향은 가정값이며 시범 운영 기록으로 보정합니다.</div>
         </div>
       </div>
       <div style="margin-top:14px"><div class="row between wrap"><h4>교사 배치표 <span class="small muted">(칸을 누르면 0~4명 순환 · 07시부터)</span></h4>
@@ -405,8 +402,7 @@ async function expand(cb) {
       <div class="grid-2-1"><div class="chart-box"><canvas id="fig4" aria-label="귀가 시각 분포"></canvas></div>
       <div class="stack small ink2"><p><b style="color:var(--ink)">${esc(p.name)}</b> · 남는 공백 ${d?.remaining_gap ?? '-'} · 거점까지 평균 ${d?.mean_km ?? '-'}km · 주민 등록 ${d?.registrations ?? 0}건</p>
         <p>기존 돌봄 종료: 어린이집 기본보육 19:30 무렵, 늘봄학교 최대 20:00.</p>
-        <p>기존 돌봄이 끝난 뒤에 귀가하는 부모 비중이 크면 확장 돌봄방이 필요한 근거가 됩니다. 운영 시간은 평일 18~22시·토요일을 기본으로 하고, 이 분포로 동별 조정합니다.</p>
-        <p class="muted">DS-012 유입(행정동), 이동목적=귀가, AGE_GRP 04~05, 평일 평균. 이동목적은 통신사 추정값이라 규모보다 분포로 봅니다.</p></div></div>`;
+        <p>기존 돌봄이 끝난 뒤에 귀가하는 부모 비중이 크면 확장 돌봄방이 필요한 근거가 됩니다. 운영 시간은 평일 18~22시·토요일을 기본으로 하고, 이 분포로 동별 조정합니다.</p></div></div>`;
     const labels = p.hours.map(h => `${h}시`);
     mk('fig4', {
       type: 'bar',
@@ -554,53 +550,6 @@ async function ops(cb) {
     <div style="height:10px;border-radius:0 4px 4px 0;background:${series(1)};width:${(c / m) * 100}%"></div><span class="small num ink2" style="text-align:right">${c}</span></div>`).join(''); };
   $('#days').onclick = e => { const b = e.target.closest('button'); if (!b) return; days = +b.dataset.d; $$('#days button').forEach(x => x.classList.toggle('on', x === b)); load().catch(toastErr); };
   await load();
-}
-
-// ═══ 데이터·방법 ═══
-async function data(cb) {
-  const d = await api('/city/datasets');
-  const st = { ok: ['good', '사용 중'], missing: ['crit', '없음'], 'optional-missing': ['', '선택 · 미보유'], error: ['crit', '구조 오류'] };
-  cb.innerHTML = `
-    <div class="card"><div class="card-title"><h3>쓰는 데이터</h3><div class="row"><span class="small muted">집계 ${esc(d.built_at)}</span><button class="btn btn-sm btn-primary" id="re">${icon('refresh', 14)} 다시 계산</button></div></div>
-      <div class="table-wrap"><table class="t"><thead><tr><th>ID</th><th>데이터</th><th>개방</th><th>상태</th><th>원천</th><th>기간</th><th>쓰임</th><th>파일</th></tr></thead><tbody>
-      ${d.datasets.map(x => `<tr><td class="kbd">${esc(x.id)}</td><td><b>${esc(x.name)}</b><br><span class="small muted">${esc(x.unit || '')}</span></td><td>${x.open ? '<span class="chip good">O</span>' : '<span class="chip">X · 내부</span>'}</td>
-        <td><span class="chip ${st[x.status][0]}">${st[x.status][1]}</span>${x.problems.map(p => `<br><span class="small" style="color:var(--critical)">${esc(p)}</span>`).join('')}</td>
-        <td>${x.virtual === true ? '<span class="chip warn">가상</span>' : x.virtual === false ? '<span class="chip blue">실제</span>' : '-'}</td><td class="num">${esc(x.period || '')}</td>
-        <td class="small">${esc(x.use)}</td><td class="small muted">${x.files.map(esc).join('<br>')}</td></tr>`).join('')}</tbody></table></div>
-      <div class="note" style="margin-top:12px"><b>실제 데이터로 바꾸는 법</b> · 납품 파일을 이름 그대로 <span class="kbd">app/data/raw/</span>에 넣고(예: <span class="kbd">T9_GG_PURPOSE_SEXAGE_ADMI_OUTFLOW_202606_4127.csv</span>, CP949 그대로),
-        공개 데이터는 같은 컬럼 구조로 <span class="kbd">app/data/public/</span>에 넣은 뒤 '다시 계산'을 누르세요. 실제 파일이 있으면 가상 데이터보다 먼저 씁니다. 헤더에 필수 컬럼이 없거나 다른 테이블 컬럼(예: TRANS_GB)이 있으면 '구조 오류'로 표시해 잘못된 파일명(인벤토리 Q-01)을 걸러 냅니다.</div>
-      <p class="small muted" style="margin-top:8px">통신 가상 데이터 기간: 평일 ${d.days.weekday.length}일, 휴일 ${d.days.holiday.length}일 (2026.6.3 지방선거·6.6 현충일 포함). 시민 화면에는 개방 데이터와 동 단위 집계만 쓰고, DS-083·DS-031은 내부 집계 결과만 씁니다.</p></div>
-    <div class="grid-2">
-      <div class="card"><h3>주요 계산 (기획서 9.2)</h3><table class="t" style="margin-top:8px"><tbody>
-        <tr><td><b>야간 출근</b></td><td class="small">DS-010: 이동목적=출근(1), 20~40대(AGE_GRP 03~05) 남녀, 출발 17~23시·0~5시 → 동별 평일 하루 평균</td></tr>
-        <tr><td><b>심야 귀가</b></td><td class="small">DS-012: 이동목적=귀가(0), 20~40대, 도착 22~23시·0~7시 → 동별 평일 하루 평균</td></tr>
-        <tr><td><b>휴일 출근</b></td><td class="small">DS-002: DOW 토·일, 이동목적=출근, 20~40대 → 동별 하루 평균</td></tr>
-        <tr><td><b>산단 통근 부모 거주</b></td><td class="small">DS-083: 직장 행정동이 반월·시화산단 동인 사람의 자택 동 분포(연령 없음 → 보조 지표)</td></tr>
-        <tr><td><b>수요 지수</b></td><td class="small">네 지표를 각각 시 최댓값으로 나눠 가중 평균 → 최댓값 100</td></tr>
-        <tr><td><b>공급 지수</b></td><td class="small">야간연장(19:30~24시)·24시간·휴일 어린이집의 야간 이용 정원 × 늦은 운영시간 + 19:30 이후 운영 돌봄시설 정원 × 시간 → 최댓값 100</td></tr>
-        <tr><td><b>돌봄 공백</b></td><td class="small">수요 지수 − 공급 지수</td></tr>
-        <tr><td><b>거점 점수</b></td><td class="small">시립어린이집 반경(기본 1km) 안 거주 비중으로 동별 지표를 합산(격자 200m) → 지표별 후보 최댓값 대비 × 가중치. z점수도 함께 표시</td></tr>
-        <tr><td><b>시간대별 예상 이용</b></td><td class="small">반경 안 20~40대 출근·귀가 시각 분포 × 전환율(영유아/20~40대 × 이용 의향). 늦은 귀가(19시~귀가), 야간 출근(출근~08시), 새벽 출근, 휴일 낮 근무</td></tr>
-        <tr><td><b>남는 공백</b></td><td class="small">공백 × (거점 지정안에서 기준 거리 밖에 사는 비중)</td></tr>
-        <tr><td><b>공간 점수</b></td><td class="small">수요 40(남는 공백 80% + 주민 등록 20%) + 접근성 30(800m 안 아동 수) + 적합도 30(층 10·면적 10(66㎡ 이상 만점)·안전 10)</td></tr>
-      </tbody></table></div>
-      <div class="stack">
-        <div class="card"><h3>한계와 대응 (기획서 11)</h3><table class="t" style="margin-top:8px"><tbody>
-          <tr><td class="small"><b>데이터에 '부모'가 없음</b></td><td class="small">20~40대 남녀의 야간·휴일 출퇴근 + 아동 수(SGIS)로 추정, 한계 명시</td></tr>
-          <tr><td class="small"><b>거점 후보가 시립어린이집에 묶임</b></td><td class="small">데이터가 가리키는 동에 시립이 없으면 '추가 지정 필요 지역'으로 표시</td></tr>
-          <tr><td class="small"><b>확장 돌봄방은 새 예산</b></td><td class="small">공공 유휴공간·문 닫은 어린이집 우선, 노인일자리 등 기존 사업 연계</td></tr>
-          <tr><td class="small"><b>영유아는 인가·자격 필요</b></td><td class="small">1단계 초등학생(다함께돌봄 틀), 영유아는 거점 보육센터와 연계</td></tr>
-          <tr><td class="small"><b>공실의 안전·소방·보험·협약</b></td><td class="small">현장 확인 단계에서 걸러 내고 담당 부서와 기준 확인</td></tr>
-          <tr><td class="small"><b>거주 위치 근사</b></td><td class="small">DS-031(50m 생활인구)이 없으면 동 경계 안 주거 중심 가중 격자로 근사</td></tr></tbody></table></div>
-        <div class="card"><h3>착수 전 확인 (기획서 9.3)</h3><ul class="small ink2" style="margin:8px 0 0;padding-left:18px">
-          <li>DS-079 '경제활동참여자 수'는 카드·대출 정보 유무라 맞벌이 지표로 쓰지 않음</li>
-          <li>이동목적(출근·귀가)은 통신사 추정값 → 규모보다 동 간 비교·시간대 분포로 사용</li>
-          <li>0~9세 통신값은 쓰지 않음(아이 휴대폰 문제). 아동 수는 SGIS</li>
-          <li>DS-083은 연령이 없고 직장 정보가 추정값 → 보조 지표로만</li>
-          <li>모든 납품 CSV는 CP949, 인구수는 소수(가중 추정치) → float로 읽음</li></ul></div>
-      </div>
-    </div>`;
-  $('#re').onclick = async () => { $('#re').disabled = true; try { await api('/city/recompute', { method: 'POST' }); toast('다시 계산했어요'); data(cb); } catch (e) { toastErr(e); $('#re').disabled = false; } };
 }
 
 // ═══ 결정 기록 ═══

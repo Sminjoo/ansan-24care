@@ -89,12 +89,14 @@ const slotLegend = `<div class="legend-row"><span><i style="background:color-mix
 
 // ── 가까운 돌봄 ──
 async function nearby(app) {
-  const mb = shell(app, { title: '가까운 돌봄', tab: '' });
+  const mb = shell(app, { title: '오늘 어디에 맡길까요?', tab: '' });
   liveToasts();
   const u = state.user;
   const kids = (await api('/children')).children;
   let pos = u.home_lat ? { lat: u.home_lat, lon: u.home_lon, label: `${u.home_dong_name} (사는 동)` } : { lat: 37.3219, lon: 126.8309, label: '안산시청 근처' };
   let childSel = kids.length ? kids[0].id : 0;
+  let need = 0;          // 몇 시(분)까지 맡겨야 하는지. 0 = 상관없음
+  let others = [];       // 근처 기존 늦은 시간 돌봄(안내용)
 
   mb.innerHTML = `
     <div class="row between wrap"><div><div class="small muted">기준 위치</div><b id="pos-label">${esc(pos.label)}</b></div>
@@ -102,6 +104,9 @@ async function nearby(app) {
       <select id="dong" style="width:auto;height:32px;padding:4px 8px;font-size:13px">${dongOptions(u.home_dong, { empty: '동 바꾸기' })}</select></div></div>
     ${kids.length ? `<div class="seg" id="kids">${kids.map(c => `<button data-c="${c.id}" class="${c.id === childSel ? 'on' : ''}">${esc(c.name)} · ${esc(c.age_label)}</button>`).join('')}<button data-c="0" class="${childSel ? '' : 'on'}">전체 보기</button></div>`
       : `<div class="note warn">아이를 등록하면 나이에 맞는 곳만 골라 보여 드려요. <a href="#/parent/me">아이 등록하기</a></div>`}
+    <div><div class="label" style="margin-bottom:6px">오늘 몇 시까지 맡겨야 하나요?</div>
+      <div class="seg" id="need">${[[0, '상관없음'], [1200, '20시까지'], [1320, '22시까지'], [1440, '자정까지'], [1890, '밤새(다음 날 아침)']]
+        .map(([v, t]) => `<button data-n="${v}" class="${v === need ? 'on' : ''}">${t}</button>`).join('')}</div></div>
     <div class="map" id="map"></div>
     <div id="list" class="stack">${loadingHtml()}</div>
     <div class="row between"><span class="small muted grow">밤·휴일 돌봄 시설 위치는 안산시가 데이터로 정합니다.</span>${state.about?.virtual ? `<span style="flex:none">${virtualFlag('가상 데이터')}</span>` : ''}</div>`;
@@ -113,17 +118,25 @@ async function nearby(app) {
   let facs = [];
 
   async function load() {
-    facs = (await api(`/facilities?lat=${pos.lat}&lon=${pos.lon}`)).facilities;
+    const r = await api(`/facilities?lat=${pos.lat}&lon=${pos.lon}&others=1`);
+    facs = r.facilities;
+    others = r.others || [];
     const avail = {};
     await Promise.all(facs.filter(f => f.bookable).map(async f => { avail[f.id] = (await api(`/facilities/${f.id}/availability?date=${isoDate(new Date())}`)).slots; }));
     draw(avail);
   }
   function draw(avail) {
     const child = kids.find(c => c.id === childSel);
-    const shown = facs.filter(f => fits(f, child));
-    const hidden = facs.length - shown.length;
+    const byAge = facs.filter(f => fits(f, child));
+    const shown = byAge.filter(f => !need || (f.until_today != null && f.until_today >= need));
+    const hidden = facs.length - byAge.length;
+    const hiddenTime = byAge.length - shown.length;
+    const ageGroup = !child ? null : child.grade >= 1 ? 'elem' : 'preschool';
+    const near = others.filter(o => (!ageGroup || o.target === ageGroup) && (!need || o.until >= need)).slice(0, 5);
     markers.clearLayers();
     L.marker([pos.lat, pos.lon], { icon: meIcon() }).addTo(markers).bindTooltip('기준 위치');
+    near.forEach(o => L.circleMarker([o.lat, o.lon], { radius: 6, color: '#fff', weight: 2, fillColor: '#898781', fillOpacity: 1 }).addTo(markers)
+      .bindTooltip(`<b>${esc(o.name)}</b><br>${esc(o.type)} · ${esc(o.until_label)} · ${km(o.distance_m)}`));
     shown.forEach(f => L.marker([f.lat, f.lon], { icon: pin(f.kind, f.kind === 'hub' ? '24' : f.kind === 'room' ? '돌' : '시') }).addTo(markers)
       .bindTooltip(`<b>${esc(f.name)}</b><br>${esc(f.kind_label)} · ${km(f.distance_m)}`));
     const b = L.latLngBounds([[pos.lat, pos.lon], ...shown.slice(0, 2).map(f => [f.lat, f.lon])]);
@@ -136,6 +149,13 @@ async function nearby(app) {
     }
     html += shown.map(f => facCard(f, avail[f.id], child)).join('') || '<div class="empty">조건에 맞는 시설이 없어요.</div>';
     if (hidden && child) html += `<p class="small muted">${esc(child.name)}의 나이에 맞지 않는 ${hidden}곳은 숨겼어요. <a href="#" id="showall">모두 보기</a></p>`;
+    if (hiddenTime) html += `<p class="small muted">오늘 그 시간까지 운영하지 않는 ${hiddenTime}곳은 숨겼어요.</p>`;
+    html += `<section class="card stack-sm"><div class="card-title" style="margin-bottom:4px"><h3>근처 다른 늦은 시간 돌봄</h3><span class="card-sub">안내 · 예약은 해당 기관</span></div>
+      ${near.length ? near.map(o => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <span class="grow"><b>${esc(o.name)}</b> <span class="chip">${esc(o.type)}</span><br>
+        <span class="small ink2">${icon('clock', 13)} ${esc(o.until_label)} · ${km(o.distance_m)} · ${esc(o.dong_name)}</span>${o.note ? `<br><span class="small muted">${esc(o.note)}</span>` : ''}</span></div>`).join('')
+        : `<div class="small muted">${need ? '이 시간까지 여는 기존 돌봄시설이 근처에 없어요. 그래서 시가 거점·돌봄방을 이곳에 두려고 합니다.' : '근처에 기존 늦은 시간 돌봄시설이 없어요.'}</div>`}
+      <p class="small muted">기존 시설은 대부분 19:30~20:00에 끝나요. 시설 이름은 가상입니다.</p></section>`;
     $('#list').innerHTML = html;
     $('#showall')?.addEventListener('click', e => { e.preventDefault(); childSel = 0; $$('#kids button').forEach(x => x.classList.toggle('on', x.dataset.c === '0')); draw(avail); });
     $$('[data-msg]').forEach(b => b.onclick = async () => {
@@ -161,6 +181,10 @@ async function nearby(app) {
         ${f.phone ? `<a class="btn" href="tel:${esc(f.phone)}">전화</a>` : ''}</div>
     </article>`;
   }
+  $('#need').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    need = +b.dataset.n; $$('#need button').forEach(x => x.classList.toggle('on', x === b)); load().catch(toastErr);
+  };
   $('#kids')?.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     childSel = +b.dataset.c; $$('#kids button').forEach(x => x.classList.toggle('on', x === b)); load().catch(toastErr);
